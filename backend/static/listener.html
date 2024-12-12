@@ -1,0 +1,151 @@
+<!-- static/listener.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Relay Listener</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            display: flex;
+            gap: 40px;
+        }
+
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            gap: 2px;
+            padding: 20px;
+        }
+
+        .pixel {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .log-container {
+            flex-grow: 1;
+            max-width: 600px;
+        }
+
+        #log {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .update-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .status {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Matrix State</h2>
+        <div id="connectionStatus" class="status"></div>
+        <div id="matrix" class="matrix"></div>
+    </div>
+
+    <div class="log-container">
+        <h2>Update Log</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let ws;
+        const matrix = document.getElementById('matrix');
+        const log = document.getElementById('log');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // Create 8x8 matrix
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                pixel.dataset.x = x;
+                pixel.dataset.y = y;
+                matrix.appendChild(pixel);
+            }
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+            
+            ws.onopen = function() {
+                updateConnectionStatus(true);
+                logEvent('WebSocket connection established');
+            };
+
+            ws.onmessage = function(event) {
+                const update = JSON.parse(event.data);
+                updatePixel(update);
+                logUpdate(update);
+            };
+
+            ws.onclose = function() {
+                updateConnectionStatus(false);
+                logEvent('WebSocket connection lost. Reconnecting...');
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = function(error) {
+                logEvent('WebSocket error: ' + error);
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            connectionStatus.textContent = connected ? 'Connected' : 'Disconnected - Attempting to reconnect...';
+            connectionStatus.className = 'status ' + (connected ? 'connected' : 'disconnected');
+        }
+
+        function updatePixel(update) {
+            const pixel = matrix.children[update.y * 8 + update.x];
+            pixel.style.backgroundColor = update.color;
+            pixel.style.opacity = update.brightness;
+        }
+
+        function logUpdate(update) {
+            const entry = document.createElement('div');
+            entry.className = 'update-entry';
+            entry.textContent = `${new Date().toLocaleTimeString()} - Pixel (${update.x},${update.y}): Color=${update.color}, Brightness=${update.brightness}`;
+            log.insertBefore(entry, log.firstChild);
+        }
+
+        function logEvent(message) {
+            const entry = document.createElement('div');
+            entry.className = 'update-entry';
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            log.insertBefore(entry, log.firstChild);
+        }
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>

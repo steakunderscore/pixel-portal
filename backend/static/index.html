@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Matrix Controller</title>
+    <style>
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            gap: 2px;
+            padding: 20px;
+        }
+
+        .pixel {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        .controls {
+            padding: 20px;
+        }
+
+        .preset-btn {
+            margin: 10px 0;
+            padding: 10px 20px;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .preset-btn:hover {
+            background-color: #ff1493;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls">
+        <label for="colorPicker">Color:</label>
+        <input type="color" id="colorPicker" value="#ff0000">
+
+        <label for="brightness">Brightness:</label>
+        <input type="range" id="brightness" min="0" max="1" step="0.1" value="1">
+
+        <div>
+            <button id="kirbyBtn" class="preset-btn">Set Kirby Pattern</button>
+        </div>
+    </div>
+
+    <div id="matrix" class="matrix"></div>
+
+    <script>
+        let ws;
+        const matrix = document.getElementById('matrix');
+        const colorPicker = document.getElementById('colorPicker');
+        const brightnessSlider = document.getElementById('brightness');
+        const kirbyBtn = document.getElementById('kirbyBtn');
+
+        // Kirby pattern definition - array of colors for each pixel
+        const kirbyPattern = [
+            ['#87CEEB', '#87CEEB', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#87CEEB', '#87CEEB'],
+            ['#87CEEB', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#87CEEB'],
+            ['#FFB6C1', '#FFB6C1', '#000000', '#FFB6C1', '#000000', '#FFB6C1', '#FFB6C1', '#FFB6C1'],
+            ['#FFB6C1', '#FFB6C1', '#000000', '#000080', '#000000', '#000080', '#FFB6C1', '#FFB6C1'],
+            ['#FFB6C1', '#FF69B4', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FFB6C1', '#FF69B4', '#FFB6C1'],
+            ['#87CEEB', '#8B0000', '#FF69B4', '#FFB6C1', '#FFB6C1', '#FF69B4', '#8B0000', '#87CEEB'],
+            ['#4CBB17', '#8B0000', '#8B0000', '#8B0000', '#8B0000', '#8B0000', '#8B0000', '#4CBB17'],
+            ['#4CBB17', '#4CBB17', '#4CBB17', '#4CBB17', '#4CBB17', '#4CBB17', '#4CBB17', '#4CBB17']
+        ];
+
+        // Create 8x8 matrix
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                pixel.dataset.x = x;
+                pixel.dataset.y = y;
+                pixel.addEventListener('click', handlePixelClick);
+                matrix.appendChild(pixel);
+            }
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+            ws.onmessage = function (event) {
+                const update = JSON.parse(event.data);
+                updatePixel(update);
+            };
+
+            ws.onclose = function () {
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+
+        function handlePixelClick(event) {
+            const x = parseInt(event.target.dataset.x);
+            const y = parseInt(event.target.dataset.y);
+            const color = colorPicker.value;
+            const brightness = parseFloat(brightnessSlider.value);
+
+            sendPixelUpdate(x, y, color, brightness);
+        }
+
+        function sendPixelUpdate(x, y, color, brightness) {
+            const update = { x, y, color, brightness };
+
+            // Send through WebSocket if connected
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(update));
+            } else {
+                console.error('WebSocket not connected');
+            }
+        }
+
+        function updatePixel(update) {
+            const pixel = matrix.children[update.y * 8 + update.x];
+            pixel.style.backgroundColor = update.color;
+            pixel.style.opacity = update.brightness;
+        }
+
+        // Set Kirby pattern function
+        function setKirbyPattern() {
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 8; x++) {
+                    sendPixelUpdate(x, y, kirbyPattern[y][x], 1.0);
+                    // Add small delay between updates to avoid overwhelming the server
+                    setTimeout(() => {
+                        sendPixelUpdate(x, y, kirbyPattern[y][x], 1.0);
+                    }, (y * 8 + x) * 50);
+                }
+            }
+        }
+
+        // Add click handler for Kirby button
+        kirbyBtn.addEventListener('click', setKirbyPattern);
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
