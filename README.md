@@ -6,9 +6,9 @@
 
 ## Overview
 
-A creative implementation for a Christmas coding challenge using an ESP32-S3-Matrix display board. This project connects to a Cloud Run service to receive pixel data through WebSockets, enabling remote control of the LED matrix display.
+A creative implementation of a Christmas coding challenge using an ESP32-S3-Matrix display board. The project connects to a Cloud Run service to receive pixel data through WebSockets, enabling remote control of the LED matrix display.
 
-The setup consistes of users using a their webbrowswer, the backend, and the ESP32-S3-Matrix display board. The backend is running on GCP Cloud Run, and the display needs to conenct to wifi to connect to the backend over a websocket.
+The system consists of three components: a web interface, a backend service, and an ESP32-S3-Matrix display board. The backend runs on GCP Cloud Run, and the display connects to the backend through a WebSocket connection over WiFi.
 
 ## Features
 
@@ -33,10 +33,11 @@ You can also view the websocket data using the [listener page](https://pixel-por
 
 ## Prerequisites
 
-- VS Code with ESP-IDF extension
-- Google Cloud SDK
-- Podman
-- Terraform
+- VS Code with ESP-IDF extension - For building firmware
+- Google Cloud SDK - For pushing continer images and setting up infrastructure
+- GCP account - For running the Cloud Run service
+- Podman - For building container images
+- Terraform - For infra seutp
 
 ## Setup and deployment
 
