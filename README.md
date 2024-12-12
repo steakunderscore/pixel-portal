@@ -4,9 +4,6 @@
 | --------------------------------------------------- | -------------------------------------------------------- |
 | ![Pixel Portal display](docs/img/running-photo.jpg) | ![Pixel Portal web interface](docs/img/webinterface.png) |
 
-The web interface looks like:
-[Screenshot placeholder]
-
 ## Overview
 
 A creative implementation for a Christmas coding challenge using an ESP32-S3-Matrix display board. This project connects to a Cloud Run service to receive pixel data through WebSockets, enabling remote control of the LED matrix display.
